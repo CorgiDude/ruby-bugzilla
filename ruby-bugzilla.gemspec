@@ -4,24 +4,23 @@ $:.unshift lib unless $:.include?(lib)
 require 'bugzilla/version'
 
 Gem::Specification.new do |s|
-  s.name        = "ruby-bugzilla"
+  s.name        = "freer-ruby-bugzilla"
   s.version     = Bugzilla::VERSION
   s.platform    = Gem::Platform::RUBY
-  s.authors     = ["Akira TAGOH"]
-  s.email       = ["akira@tagoh.org"]
-  s.homepage    = "http://github.com/tagoh/ruby-bugzilla"
-  s.summary = %Q{Ruby binding for Bugzilla WebService APIs}
-  s.description = %Q{This aims to provide similar features to access to Bugzilla through WebService APIs in Ruby.}
+  s.authors     = ["Andrew Wilcox"]
+  s.email       = ["awilcox AT wilcox-techcom"]
+  s.homepage    = "https://github.com/CorgiDude/ruby-bugzilla"
+  s.summary = %Q{Ruby binding for Bugzilla WebService APIs (Not LGPLv3)}
+  s.description = %Q{Provide access to Bugzilla from Ruby}
+
   s.required_rubygems_version = ">= 1.3.6"
 
   s.add_development_dependency "rspec", "~> 2.0"
+  s.add_development_dependency("bundler", [">= 1.0"])
+
   s.add_runtime_dependency "gruff"
   s.add_runtime_dependency "highline"
-
-  # sems like gruff is missing this one
   s.add_runtime_dependency "rmagick"
-
-  s.add_development_dependency("bundler", [">= 1.0"])
 
   bindir = 'bin'
   s.executables = Dir.glob('bin/*').reject {|x| x =~ /~\Z/}.map {|x| File.basename x}
