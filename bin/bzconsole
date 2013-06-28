@@ -51,6 +51,8 @@ module BzConsole
       @n_args = 0
       @defaultyamlfile = File.join(ENV['HOME'], ".bzconsole.yml")
       @plugin = plugin
+      @timeout = 60 # default
+      @anonymous = true # default
     end # def initialize
 
     attr_reader :n_args
@@ -61,6 +63,8 @@ module BzConsole
       parser.on('-h', '--help', 'show this message') {|x| opts[:help] = true}
 
       read_config(opts)
+      @timeout = opts[:timeout] if opts.has_key?(:timeout)
+      @anonymous = opts[:anonymous]
       @plugin.run(:parser, nil, parser, argv, opts)
 
       parser.order(argv)
@@ -71,6 +75,26 @@ module BzConsole
     end # def do
 
     protected
+
+    def make_xmlrpc_from_config(info)
+      proxy_host, proxy_port = get_proxy(info)
+
+      Bugzilla::XMLRPC.new(info[:URL], proxy_host, proxy_port, @timeout)
+    end
+
+    def new_session(xmlrpc, info)
+      login = nil
+      pass = nil
+      unless @anonymous
+        login = info[:User]
+        pass = info[:Password]
+      end
+
+      user = Bugzilla::User.new(xmlrpc)
+      user.session({:login => login, :password => pass}) do
+        yield
+      end
+    end
 
     def read_config(opts)
       fname = opts[:config].nil? ? @defaultyamlfile : opts[:config]
@@ -208,16 +232,10 @@ module BzConsole
         end
 
         info = conf[prefix]
-        uri = URI.parse(info[:URL])
-        host = uri.host
-        port = uri.port
-        path = uri.path.empty? ? nil : uri.path
         login = info[:User].nil? ? ask("Bugzilla ID: ") : info[:User]
         pass = info[:Password].nil? ? ask("Bugzilla password: ") {|q| q.echo = false} : info[:Password]
-        proxy_host, proxy_port = get_proxy(info)
-        timeout = opts[:timeout].nil? ? 60 : opts[:timeout]
 
-        xmlrpc = Bugzilla::XMLRPC.new(host, port, path, proxy_host, proxy_port, timeout)
+        xmlrpc = make_xmlrpc_from_config(info)
         user = Bugzilla::User.new(xmlrpc)
         begin
           result = user.login({'login'=>login, 'password'=>pass, 'remember'=>true})
@@ -308,32 +326,23 @@ module BzConsole
         end
 
         info = conf[prefix]
-        uri = URI.parse(info[:URL])
-        host = uri.host
-        port = uri.port
-        path = uri.path.empty? ? nil : uri.path
-        login = opts[:command][:anonymous] == true ? nil : info[:User]
-        pass = opts[:command][:anonymous] == true ? nil : info[:Password]
-        proxy_host, proxy_port = get_proxy(info)
-        timeout = opts[:timeout].nil? ? 60 : opts[:timeout]
 
-        @plugin.run(:pre, host, :getbug, opts)
+        @plugin.run(:pre, nil, :getbug, opts)
 
-        xmlrpc = Bugzilla::XMLRPC.new(host, port, path, proxy_host, proxy_port, timeout)
-        user = Bugzilla::User.new(xmlrpc)
-        user.session({:login => login, :password => pass}) do
+        xmlrpc = make_xmlrpc_from_config(info)
+        new_session(xmlrpc, info) do
           bug = Bugzilla::Bug.new(xmlrpc)
 
           result = nil
-          if opts[:command][:summary] == true then
+          if opts[:command][:summary] then
             result = bug.get_bugs(nnn.split(','))
-          elsif opts[:command][:details] == true then
+          elsif opts[:command][:details] then
             result = bug.get_bugs(nnn.split(','), ::Bugzilla::Bug::FIELDS_DETAILS)
           else
             result = bug.get_bugs(nnn.split(','), nil)
           end
 
-          @plugin.run(:post, host, :getbug, result)
+          @plugin.run(:post, nil, :getbug, result)
 
           result.each do |r|
             yield r
@@ -422,20 +431,11 @@ module BzConsole
         end
 
         info = conf[prefix]
-        uri = URI.parse(info[:URL])
-        host = uri.host
-        port = uri.port
-        path = uri.path.empty? ? nil : uri.path
-        login = opts[:command][:anonymous] == true ? nil : info[:User]
-        pass = opts[:command][:anonymous] == true ? nil : info[:Password]
-        proxy_host, proxy_port = get_proxy(info)
-        timeout = opts[:timeout].nil? ? 60 : opts[:timeout]
 
-        @plugin.run(:pre, host, :search, opts[:command][:query])
+        @plugin.run(:pre, nil, :search, opts[:command][:query])
 
-        xmlrpc = Bugzilla::XMLRPC.new(host, port, path, proxy_host, proxy_port, timeout)
-        user = Bugzilla::User.new(xmlrpc)
-        user.session({:login => login, :password => pass}) do
+        xmlrpc = make_xmlrpc_from_config(info)
+        new_session(xmlrpc, info) do
           bug = Bugzilla::Bug.new(xmlrpc)
 
           opts[:command][:query][:product].map! {|x| info.include?(:ProductAliases) && info[:ProductAliases].include?(x) ? info[:ProductAliases][x] : x} if opts[:command][:query].include?(:product)
@@ -501,20 +501,11 @@ module BzConsole
         end
 
         info = conf[prefix]
-        uri = URI.parse(info[:URL])
-        host = uri.host
-        port = uri.port
-        path = uri.path.empty? ? nil : uri.path
-        login = opts[:command][:anonymous] == true ? nil : info[:User]
-        pass = opts[:command][:anonymous] == true ? nil : info[:Password]
-        proxy_host, proxy_port = get_proxy(info)
-        timeout = opts[:timeout].nil? ? 60 : opts[:timeout]
 
-        @plugin.run(:pre, host, :show, opts)
+        @plugin.run(:pre, nil, :show, opts)
 
-        xmlrpc = Bugzilla::XMLRPC.new(host, port, path, proxy_host, proxy_port, timeout)
-        user = Bugzilla::User.new(xmlrpc)
-        user.session({:login => login, :password => pass}) do
+        xmlrpc = make_xmlrpc_from_config(info)
+        new_session(xmlrpc, info) do
           if opts[:command][:show][:mode] == :field then
             bug = Bugzilla::Bug.new(xmlrpc)
 
@@ -667,18 +658,9 @@ module BzConsole
         end
 
         info = conf[prefix]
-        uri = URI.parse(info[:URL])
-        host = uri.host
-        port = uri.port
-        path = uri.path.empty? ? nil : uri.path
-        login = opts[:command][:anonymous] == true ? nil : info[:User]
-        pass = opts[:command][:anonymous] == true ? nil : info[:Password]
-        proxy_host, proxy_port = get_proxy(info)
-        timeout = opts[:timeout].nil? ? 60 : opts[:timeout]
 
-        xmlrpc = Bugzilla::XMLRPC.new(host, port, path, proxy_host, proxy_port, timeout)
-        user = Bugzilla::User.new(xmlrpc)
-        user.session({:login => login, :password => pass}) do
+        xmlrpc = make_xmlrpc_from_config(info)
+        new_session(xmlrpc, info) do
           bug = Bugzilla::Bug.new(xmlrpc)
 
           opts[:command][:query][:product].map! {|x| info.include?(:ProductAliases) && info[:ProductAliases].include?(x) ? info[:ProductAliases][x] : x} if opts[:command][:query].include?(:product)
@@ -849,25 +831,16 @@ module BzConsole
       end
 
       info = conf[prefix]
-      uri = URI.parse(info[:URL])
-      host = uri.host
-      port = uri.port
-      path = uri.path.empty? ? nil : uri.path
-      login = opts[:command][:anonymous] == true ? nil : info[:User]
-      pass = opts[:command][:anonymous] == true ? nil : info[:Password]
-      proxy_host, proxy_port = get_proxy(info)
-      timeout = opts[:timeout].nil? ? 60 : opts[:timeout]
 
-      @plugin.run(:pre, host, :newbug, opts)
+      @plugin.run(:pre, nil, :newbug, opts)
 
-      xmlrpc = Bugzilla::XMLRPC.new(host, port, path, proxy_host, proxy_port, timeout)
-      user = Bugzilla::User.new(xmlrpc)
-      user.session({:login => login, :password => pass}) do
+      xmlrpc = make_xmlrpc_from_config(info)
+      new_session(xmlrpc, info) do
         bug = Bugzilla::Bug.new(xmlrpc)
 
         result = bug.create(opts[:command][:newbug])
 
-        @plugin.run(:post, host, :newbug, result)
+        @plugin.run(:post, nil, :newbug, result)
 
         yield result
       end
@@ -887,7 +860,7 @@ begin
     opt.separator ""
     opt.separator "Global options:"
     opt.on('-c', '--config=FILE', 'read FILE as the configuration file.') {|v| opts[:config] = v}
-    opt.on('-t', '--timeout=SEC', 'Set XMLRPC timeout in a second.') {|v| opts[:timeout] = v.to_i}
+    opt.on('-t', '--timeout=SEC', 'Set XMLRPC timeout in a second.') {|v| opts[:command][:timeout] = v.to_i}
     opt.on('-h', '--help', 'show this message') {|x| opts[:help] = true}
 
     cmds = BzConsole.constants.sort.map {|x| (k = eval("BzConsole::#{x}")).class == Class && x != :CommandTemplate ? x.downcase.to_sym : nil}.compact
