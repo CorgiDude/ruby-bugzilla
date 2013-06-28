@@ -20,6 +20,7 @@
 # Boston, MA 02111-1307, USA.
 
 require 'xmlrpc/client'
+require 'uri'
 
 module Bugzilla
 
@@ -33,14 +34,21 @@ module Bugzilla
 
 =begin rdoc
 
-==== Bugzilla::XMLRPC#new(host, port = 443, path = '/xmlrpc.cgi', proxy_host = nil, proxy_port = nil)
+==== Bugzilla::XMLRPC#new(url = 'http://bugs/xmlrpc.cgi', proxy_host = nil, proxy_port = nil, timeout = 60)
+
+Connects to the Bugzilla instance at _url_, optionally using the proxy specified
+by _proxy_host_ and _proxy_port_.  Will timeout connecting after _timeout_ seconds
+(default: 60)
 
 =end
 
-    def initialize(host, port = 443, path = '/xmlrpc.cgi', proxy_host = nil, proxy_port = nil, timeout = 60)
-      path ||= '/xmlrpc.cgi'
-      use_ssl = port == 443 ? true : false
-      @xmlrpc = ::XMLRPC::Client.new(host, path, port, proxy_host, proxy_port, nil, nil, use_ssl, timeout)
+    def initialize(url, proxy_host = nil, proxy_port = nil, timeout = 60)
+      raise ArgumentError, 'No URL specified' if url.nil?
+
+      parsed_uri = URI.parse(url)
+      parsed_uri.path = '/xmlrpc.cgi' if parsed_uri.path.empty?
+      use_ssl = parsed_uri.port == 443 ? true : false
+      @xmlrpc = ::XMLRPC::Client.new(parsed_uri.host, parsed_uri.path, parsed_uri.port, proxy_host, proxy_port, nil, nil, use_ssl, timeout)
     end # def initialize
 
 =begin rdoc
