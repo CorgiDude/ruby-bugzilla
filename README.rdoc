@@ -1,18 +1,12 @@
-= Ruby binding for Bugzilla WebService APIs
+= Bugzilla Ruby gem
 
-This aims to provide similar features in Ruby to access to Bugzilla
-through {WebService APIs}[http://www.bugzilla.org/docs/tip/en/html/api/Bugzilla/WebService.html].  currently the following
-APIs are available:
+This gem is a LGPLv2.1 (NOT v3) fork of {Red Hat's ruby-bugzilla gem}[https://github.com/tagoh/ruby-bugzilla].
 
-* Bugzilla::WebService::Bugzilla[http://www.bugzilla.org/docs/tip/en/html/api/Bugzilla/WebService/Bugzilla.html]
-* Bugzilla::WebService::Product[http://www.bugzilla.org/docs/tip/en/html/api/Bugzilla/WebService/Product.html]
-* Bugzilla::WebService::Bug[http://www.bugzilla.org/docs/tip/en/html/api/Bugzilla/WebService/Bug.html]
-* Bugzilla::WebService::User[http://www.bugzilla.org/docs/tip/en/html/api/Bugzilla/WebService/User.html]
+As the LGPLv3 license is not acceptable for my use, I cannot merge any new changes from their repo.  If you have a project that requires you to not use the LGPLv3 license, you can use this gem.  However, obviously some updates and changes to the original gem will not bubble up as I cannot legally look at that code.
 
 == Copyright
 
-Copyright (c) 2010-2012 Red Hat, Inc. See COPYING for details.
+Copyright (c) 2010-2012 Red Hat, Inc.
+Copyright (c) 2013 Wilcox Technologies LLC.
 
-== Authors
-
-Akira TAGOH
+Mostly licensed (regrettably) under LGPLv2.1, with any changes after revision a3c45f18a16d832881364075c9b0ab4abef88563 dual-licensed under NCSA and LGPLv2.1.  (The changes are dual-licensed, the original code before that changeset is LGPL).  See COPYING for details.
