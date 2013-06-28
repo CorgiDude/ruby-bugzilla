@@ -4,20 +4,8 @@
 # Authors:
 #   Akira TAGOH  <tagoh@redhat.com>
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
+# Copyright (C) 2013 Wilcox Technologies, LLC
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place - Suite 330,
-# Boston, MA 02111-1307, USA.
 
 require 'bugzilla/api_tmpl'
 
@@ -27,9 +15,7 @@ module Bugzilla
 
 === Bugzilla::User
 
-Bugzilla::User class is to access the
-Bugzilla::WebService::User API that allows you to create
-User Accounts and log in/out using an existing account.
+Bugzilla user and session management
 
 =end
 
@@ -37,31 +23,38 @@ User Accounts and log in/out using an existing account.
 
 =begin rdoc
 
-==== Bugzilla::User#session(user, password)
+==== Bugzilla::User#session(credentials)
 
-Keeps the bugzilla session during doing something in the block.
+Performs a block while signed in using the credentials specified.
+
+If no credentials are specified, or they are invalid, we will attempt to use the Bugzilla cookie found at
+~/.ruby-bugzilla-cookie.yml.  Please ensure that this file is chmod'd 0600 if you want to use it.
 
 =end
 
-    def session(user, password)
-      fname = File.join(ENV['HOME'], '.ruby-bugzilla-cookie.yml')
-      if File.exist?(fname) && File.lstat(fname).mode & 0600 == 0600 then
-        conf = YAML.load(File.open(fname).read)
-        host = @iface.instance_variable_get(:@xmlrpc).instance_variable_get(:@host)
-        cookie = conf[host]
-        unless cookie.nil? then
-          @iface.cookie = cookie
-          print "Using cookie\n"
-          yield
-          conf[host] = @iface.cookie
-          File.open(fname, 'w') {|f| f.chmod(0600); f.write(conf.to_yaml)}
-          return
+    def session(credentials)
+      if credentials.nil?
+        fname = File.join(ENV['HOME'], '.ruby-bugzilla-cookie.yml')
+
+        if File.exist?(fname) && File.lstat(fname).mode & 0600 == 0600 then
+          conf = YAML.load(File.open(fname).read)
+          host = @iface.instance_variable_get(:@xmlrpc).instance_variable_get(:@host)
+          cookie = conf[host]
+
+          unless cookie.nil? then
+            @iface.cookie = cookie
+
+            yield
+
+            # update cookie, if necessary
+            if @iface.cookie != cookie
+              conf[host] = @iface.cookie
+              File.open(fname, 'w') {|f| f.chmod(0600); f.write(conf.to_yaml)}
+            end
+          end
         end
-      end
-      if user.nil? || password.nil? then
-        yield
       else
-        login({'login'=>user, 'password'=>password, 'remember'=>true})
+        login(credentials.merge({'remember' => true}))
         yield
         logout
       end

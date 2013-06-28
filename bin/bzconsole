@@ -321,7 +321,7 @@ module BzConsole
 
         xmlrpc = Bugzilla::XMLRPC.new(host, port, path, proxy_host, proxy_port, timeout)
         user = Bugzilla::User.new(xmlrpc)
-        user.session(login, pass) do
+        user.session({:login => login, :password => pass}) do
           bug = Bugzilla::Bug.new(xmlrpc)
 
           result = nil
@@ -435,7 +435,7 @@ module BzConsole
 
         xmlrpc = Bugzilla::XMLRPC.new(host, port, path, proxy_host, proxy_port, timeout)
         user = Bugzilla::User.new(xmlrpc)
-        user.session(login, pass) do
+        user.session({:login => login, :password => pass}) do
           bug = Bugzilla::Bug.new(xmlrpc)
 
           opts[:command][:query][:product].map! {|x| info.include?(:ProductAliases) && info[:ProductAliases].include?(x) ? info[:ProductAliases][x] : x} if opts[:command][:query].include?(:product)
@@ -514,7 +514,7 @@ module BzConsole
 
         xmlrpc = Bugzilla::XMLRPC.new(host, port, path, proxy_host, proxy_port, timeout)
         user = Bugzilla::User.new(xmlrpc)
-        user.session(login, pass) do
+        user.session({:login => login, :password => pass}) do
           if opts[:command][:show][:mode] == :field then
             bug = Bugzilla::Bug.new(xmlrpc)
 
@@ -678,7 +678,7 @@ module BzConsole
 
         xmlrpc = Bugzilla::XMLRPC.new(host, port, path, proxy_host, proxy_port, timeout)
         user = Bugzilla::User.new(xmlrpc)
-        user.session(login, pass) do
+        user.session({:login => login, :password => pass}) do
           bug = Bugzilla::Bug.new(xmlrpc)
 
           opts[:command][:query][:product].map! {|x| info.include?(:ProductAliases) && info[:ProductAliases].include?(x) ? info[:ProductAliases][x] : x} if opts[:command][:query].include?(:product)
@@ -862,7 +862,7 @@ module BzConsole
 
       xmlrpc = Bugzilla::XMLRPC.new(host, port, path, proxy_host, proxy_port, timeout)
       user = Bugzilla::User.new(xmlrpc)
-      user.session(login, pass) do
+      user.session({:login => login, :password => pass}) do
         bug = Bugzilla::Bug.new(xmlrpc)
 
         result = bug.create(opts[:command][:newbug])
