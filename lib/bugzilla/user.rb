@@ -32,7 +32,7 @@ If no credentials are specified, or they are invalid, we will attempt to use the
 
 =end
 
-    def session(credentials)
+    def session(credentials = nil)
       if credentials.nil?
         fname = File.join(ENV['HOME'], '.ruby-bugzilla-cookie.yml')
 
